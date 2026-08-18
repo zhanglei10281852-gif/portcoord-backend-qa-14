@@ -144,8 +144,7 @@ func (s *Service) Claim(ctx context.Context, req ClaimRequest) (*ClaimResult, er
 		return nil, apperr.Wrap(apperr.CodeInternal, "get pilot task failed", err)
 	}
 	if t.Status != domain.PTStatusAssigned {
-		return nil, apperr.Wrap(apperr.CodeInvalidState, "claim state rejected",
-			apperr.InvalidTransition("pilot_task", string(t.Status), string(domain.PTStatusClaimed)))
+		return nil, apperr.InvalidTransition("pilot_task", string(t.Status), string(domain.PTStatusClaimed))
 	}
 	now := s.clock.Now()
 	expiresAt := now.Add(s.leaseTimeout)

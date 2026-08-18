@@ -145,12 +145,9 @@ func (w *Worker) ClaimAndExecute(ctx context.Context, taskID string) error {
 		ExecutorID: w.id,
 	})
 	if err != nil {
-		if apperr.IsConflict(err) || apperr.IsNotFound(err) {
+		if apperr.IsConflict(err) || apperr.IsNotFound(err) || apperr.IsInvalidTransition(err) {
 			w.logger.Debug("claim lost or not found", apperr.F("task_id", taskID))
 			return nil
-		}
-		if apperr.IsInvalidTransition(err) {
-			return fmt.Errorf("task %s cannot be replayed: %w", taskID, err)
 		}
 		w.incErrors()
 		return fmt.Errorf("claim task %s: %w", taskID, err)
