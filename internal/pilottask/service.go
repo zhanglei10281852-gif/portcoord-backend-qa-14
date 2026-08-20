@@ -144,6 +144,14 @@ func (s *Service) Claim(ctx context.Context, req ClaimRequest) (*ClaimResult, er
 		return nil, apperr.Wrap(apperr.CodeInternal, "get pilot task failed", err)
 	}
 	if t.Status != domain.PTStatusAssigned {
+		// A task already in its terminal completed state is an idempotent
+		// replay of a prior execution: the work is already done. Classify
+		// it as a duplicate so callers treat the repeat as a no-op rather
+		// than a hard replay failure. Other non-assigned states remain a
+		// genuine invalid transition.
+		if t.Status == domain.PTStatusCompleted {
+			return nil, apperr.Duplicate(fmt.Sprintf("pilot_task %s already completed", req.TaskID))
+		}
 		return nil, apperr.Wrap(apperr.CodeInvalidState, "claim state rejected",
 			apperr.InvalidTransition("pilot_task", string(t.Status), string(domain.PTStatusClaimed)))
 	}

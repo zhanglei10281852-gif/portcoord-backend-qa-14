@@ -149,6 +149,13 @@ func (w *Worker) ClaimAndExecute(ctx context.Context, taskID string) error {
 			w.logger.Debug("claim lost or not found", apperr.F("task_id", taskID))
 			return nil
 		}
+		// A task already completed is an idempotent replay of a prior
+		// execution: the work is done, so treat the repeat as a no-op
+		// rather than surfacing a replay failure to the caller.
+		if apperr.IsDuplicate(err) {
+			w.logger.Debug("task already completed, idempotent replay", apperr.F("task_id", taskID))
+			return nil
+		}
 		if apperr.IsInvalidTransition(err) {
 			return fmt.Errorf("task %s cannot be replayed: %w", taskID, err)
 		}
